@@ -30,20 +30,20 @@ async function verifyUser(email) {
 }
 
 async function getUserProfile(user_id) {
-    const query = `SELECT name , email , created_at FROM users WHERE id = $1`;
+    const query = `SELECT username , email ,bio, created_at FROM users WHERE id = $1`;
     const values = [user_id];
     const result = await db.query(query, values);
     return result.rows[0];
 }
 
-async function updateUserProfile(user_id, name, email) {
+async function updateUserProfile(user_id, username, email, bio) {
     const query = `
         UPDATE users
-        SET name = $1, email = $2
-        WHERE id = $3
-        RETURNING id, name, email
+        SET username = $1, email = $2,bio = $3
+        WHERE id = $4
+        RETURNING id, username, email,bio
     `;
-    const values = [name, email, user_id];
+    const values = [username, email, bio, user_id];
     const result = await db.query(query, values);
     return result.rows[0];
 }

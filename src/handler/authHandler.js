@@ -36,6 +36,7 @@ async function login(req, res, next) {
                 message: "User email and password required"
             });
         }
+        console.log(email, password);
         const emailExisted = await verifyEmail(email);
         if (!emailExisted) {
             return res.status(404).json({
