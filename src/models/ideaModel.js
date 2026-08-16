@@ -1,36 +1,55 @@
-import db from "../database/db";
+import db from "../database/db.js";
 
 async function createIdea(user_id, title, description) {
-  const query = `INSERT INTO (title,description) VALUES ($1,$2) WHERE id = $3 RETURNING id`;
-  const values = [title, description, user_id];
+  const query = `
+    INSERT INTO ideas (user_id, title, description)
+    VALUES ($1, $2, $3)
+    RETURNING id
+  `;
+
+  const values = [user_id, title, description];
+
   const result = await db.query(query, values);
+
   return result.rows[0];
 }
 
-async function addTags(post_id, tags) {
+async function addTags(idea_id, user_id, tags) {
   for (const tagName of tags) {
-    const tagResult = await db.query(
-      `
-            INSERT INTO tags (name)
-            VALUES ($1)
-            ON CONFLICT (name)
-            DO UPDATE SET name = EXCLUDED.name
-            RETURNING id
-            `,
-      [tagName],
-    );
-
-    const tag_id = tagResult.rows[0].id;
-
     await db.query(
       `
-            INSERT INTO post_tags (post_id, tag_id)
-            VALUES ($1, $2)
-            ON CONFLICT DO NOTHING
-            `,
-      [post_id, tag_id],
+      INSERT INTO tags (idea_id, user_id, tags)
+      VALUES ($1, $2, $3)
+      `,
+      [idea_id, user_id, tagName],
     );
   }
 }
 
-export { createIdea, addTags };
+async function getAllIdea() {
+  const query = `
+    SELECT id, user_id, title, description, likes
+    FROM ideas
+    ORDER BY id DESC
+  `;
+
+  const result = await db.query(query);
+
+  return result.rows;
+}
+
+async function getAllTagsAccordingToIdea(user_id) {
+  const query = `
+    SELECT tags
+    FROM tags
+    WHERE user_id = $1
+  `;
+
+  const values = [user_id];
+
+  const result = await db.query(query, values);
+
+  return result.rows;
+}
+
+export { createIdea, addTags, getAllIdea, getAllTagsAccordingToIdea };
