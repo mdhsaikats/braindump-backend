@@ -11,6 +11,7 @@ import notFound from "./src/middleware/errorHandler.js";
 
 
 const app = express();
+app.set("trust proxy", 1);
 const appRouter = express.Router();
 
 app.use(
