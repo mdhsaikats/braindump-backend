@@ -7,7 +7,7 @@ import authMiddleware from "./src/middleware/authMiddleware.js";
 import limiter from "./src/utils/rateLimiter.js";
 import helmet from "helmet";
 import cors from "cors";
-import notFound from "./src/middleware/errorHandler.js";
+import { notFound, globalErrorHandler } from "./src/middleware/errorHandler.js";
 
 
 const app = express();
@@ -38,5 +38,6 @@ appRouter.use("/api/v1/users", authMiddleware, userRouter, ideaRoutes);
 
 app.use(appRouter);
 app.use(notFound);
+app.use(globalErrorHandler);
 
 export default app;

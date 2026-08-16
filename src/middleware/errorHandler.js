@@ -5,4 +5,13 @@ const notFound = (req, res) => {
   });
 };
 
+const globalErrorHandler = (err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal server error",
+  });
+};
+
+export { notFound, globalErrorHandler };
 export default notFound;
