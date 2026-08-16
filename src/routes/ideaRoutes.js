@@ -1,7 +1,23 @@
 import express from "express";
 const router = express.Router();
-import { createIdeaPost } from "../handler/ideaHandler.js";
+import { 
+  createIdeaPost, 
+  getAllIdeas,
+  getMyIdeas, 
+  deleteIdeaPost, 
+  saveIdeaHandler, 
+  unsaveIdeaHandler, 
+  getSavedIdeasHandler, 
+  likeIdeaHandler 
+} from "../handler/ideaHandler.js";
 
+router.get("/idea", getAllIdeas);
 router.post("/idea", createIdeaPost);
+router.get("/my-ideas", getMyIdeas);
+router.delete("/idea/:id", deleteIdeaPost);
+router.get("/saves", getSavedIdeasHandler);
+router.post("/saves/:ideaId", saveIdeaHandler);
+router.delete("/saves/:ideaId", unsaveIdeaHandler);
+router.post("/idea/:id/like", likeIdeaHandler);
 
 export default router;

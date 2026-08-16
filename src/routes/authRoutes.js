@@ -1,7 +1,7 @@
-import express from "express";
+import express from 'express';
 const router = express.Router();
 
-import { register, login } from "../handler/authHandler.js";
+import { register, login } from '../handler/authHandler.js';
 router.post("/register", register);
 router.post("/login", login);
 

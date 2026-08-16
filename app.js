@@ -8,7 +8,7 @@ import limiter from "./src/utils/rateLimiter.js";
 import helmet from "helmet";
 import cors from "cors";
 import notFound from "./src/middleware/errorHandler.js";
-import publicRoutes from "./src/routes/publicRoutes.js";
+
 
 const app = express();
 const appRouter = express.Router();
@@ -34,7 +34,6 @@ appRouter.use("/api/v1/health", (req, res) => {
 
 appRouter.use("/api/v1/auth", authRouter);
 appRouter.use("/api/v1/users", authMiddleware, userRouter, ideaRoutes);
-appRouter.use("/api/v1/public", publicRoutes);
 
 app.use(appRouter);
 app.use(notFound);

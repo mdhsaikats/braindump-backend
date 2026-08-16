@@ -1,4 +1,4 @@
-﻿DROP TABLE IF EXISTS "public"."users";
+DROP TABLE IF EXISTS "public"."users";
 -- Table Definition
 CREATE TABLE "public"."users" (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -44,9 +44,11 @@ DROP TABLE IF EXISTS "public"."tags";
 -- Table Definition
 CREATE TABLE "public"."tags" (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "idea_id" uuid,
     "user_id" uuid,
     "tags" varchar(100),
     "created_at" timestamp DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "tags_idea_id_fkey" FOREIGN KEY ("idea_id") REFERENCES "public"."ideas"("id") ON DELETE CASCADE,
     CONSTRAINT "tags_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE,
     PRIMARY KEY ("id")
 );

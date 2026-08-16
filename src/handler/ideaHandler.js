@@ -2,6 +2,12 @@ import {
   addTags,
   createIdea,
   getAllIdea,
+  getUserIdeas,
+  deleteIdea,
+  saveIdea,
+  unsaveIdea,
+  getUserSavedIdeas,
+  toggleLike,
   getAllTagsAccordingToIdea,
 } from "../models/ideaModel.js";
 
@@ -10,26 +16,24 @@ async function createIdeaPost(req, res, next) {
     const { title, description, tags } = req.body;
     const userId = req.user.userId;
 
-    if (!Array.isArray(tags)) {
-      return res.status(400).json({
-        success: false,
-        error: "tags must be an array",
-      });
-    }
+    const tagsArray = Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : []);
 
     const idea = await createIdea(userId, title, description);
-
     const ideaId = idea.id;
 
-    await addTags(ideaId, userId, tags);
+    if (tagsArray.length > 0) {
+      await addTags(ideaId, userId, tagsArray);
+    }
 
     return res.status(201).json({
       success: true,
+      message: "Idea created successfully",
       idea: {
         id: ideaId,
+        user_id: userId,
         title,
         description,
-        tags,
+        tags: tagsArray,
       },
     });
   } catch (error) {
@@ -50,4 +54,110 @@ async function getAllIdeas(req, res, next) {
   }
 }
 
-export { createIdeaPost, getAllIdeas };
+async function getMyIdeas(req, res, next) {
+  try {
+    const userId = req.user.userId;
+    const ideas = await getUserIdeas(userId);
+
+    return res.status(200).json({
+      success: true,
+      ideas,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteIdeaPost(req, res, next) {
+  try {
+    const userId = req.user.userId;
+    const { id } = req.params;
+
+    const deleted = await deleteIdea(id, userId);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: "Idea not found or unauthorized",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Idea deleted successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function saveIdeaHandler(req, res, next) {
+  try {
+    const userId = req.user.userId;
+    const { ideaId } = req.params;
+
+    await saveIdea(userId, ideaId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Idea saved successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function unsaveIdeaHandler(req, res, next) {
+  try {
+    const userId = req.user.userId;
+    const { ideaId } = req.params;
+
+    await unsaveIdea(userId, ideaId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Idea unsaved successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getSavedIdeasHandler(req, res, next) {
+  try {
+    const userId = req.user.userId;
+    const ideas = await getUserSavedIdeas(userId);
+
+    return res.status(200).json({
+      success: true,
+      ideas,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function likeIdeaHandler(req, res, next) {
+  try {
+    const { id } = req.params;
+    const updated = await toggleLike(id);
+
+    return res.status(200).json({
+      success: true,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export { 
+  createIdeaPost, 
+  getAllIdeas, 
+  getMyIdeas, 
+  deleteIdeaPost, 
+  saveIdeaHandler, 
+  unsaveIdeaHandler, 
+  getSavedIdeasHandler, 
+  likeIdeaHandler 
+};
