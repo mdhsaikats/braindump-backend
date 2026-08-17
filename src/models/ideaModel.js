@@ -26,26 +26,38 @@ async function addTags(idea_id, user_id, tags) {
   }
 }
 
-async function getAllIdea() {
-  const query = `
+async function getAllIdea(user_id = null, searchQuery = "") {
+  let query = `
     SELECT 
       i.id, 
       i.user_id, 
       i.title, 
       i.description, 
-      i.likes,
+      COALESCE((SELECT COUNT(*)::int FROM idea_likes il WHERE il.idea_id = i.id), i.likes) AS likes,
       i.created_at,
       u.username AS author_name,
+      COALESCE((SELECT EXISTS(SELECT 1 FROM idea_likes il WHERE il.idea_id = i.id AND il.user_id = $1)), false) AS is_liked,
+      COALESCE((SELECT EXISTS(SELECT 1 FROM saves s WHERE s.idea_id = i.id AND s.user_id = $1)), false) AS is_saved,
       COALESCE(
         (SELECT json_agg(t.tags) FROM tags t WHERE t.idea_id = i.id),
         '[]'::json
       ) AS tags
     FROM ideas i
     LEFT JOIN users u ON i.user_id = u.id
-    ORDER BY i.created_at DESC
   `;
 
-  const result = await db.query(query);
+  const values = [user_id];
+
+  if (searchQuery && searchQuery.trim() !== "") {
+    query += ` WHERE i.title ILIKE $2 OR i.description ILIKE $2 OR EXISTS (
+      SELECT 1 FROM tags t WHERE t.idea_id = i.id AND t.tags ILIKE $2
+    )`;
+    values.push(`%${searchQuery.trim()}%`);
+  }
+
+  query += ` ORDER BY i.created_at DESC`;
+
+  const result = await db.query(query, values);
   return result.rows;
 }
 
@@ -56,9 +68,11 @@ async function getUserIdeas(user_id) {
       i.user_id, 
       i.title, 
       i.description, 
-      i.likes,
+      COALESCE((SELECT COUNT(*)::int FROM idea_likes il WHERE il.idea_id = i.id), i.likes) AS likes,
       i.created_at,
       u.username AS author_name,
+      COALESCE((SELECT EXISTS(SELECT 1 FROM idea_likes il WHERE il.idea_id = i.id AND il.user_id = $1)), false) AS is_liked,
+      COALESCE((SELECT EXISTS(SELECT 1 FROM saves s WHERE s.idea_id = i.id AND s.user_id = $1)), false) AS is_saved,
       COALESCE(
         (SELECT json_agg(t.tags) FROM tags t WHERE t.idea_id = i.id),
         '[]'::json
@@ -114,9 +128,11 @@ async function getUserSavedIdeas(user_id) {
       i.user_id, 
       i.title, 
       i.description, 
-      i.likes,
+      COALESCE((SELECT COUNT(*)::int FROM idea_likes il WHERE il.idea_id = i.id), i.likes) AS likes,
       i.created_at,
       u.username AS author_name,
+      COALESCE((SELECT EXISTS(SELECT 1 FROM idea_likes il WHERE il.idea_id = i.id AND il.user_id = $1)), false) AS is_liked,
+      true AS is_saved,
       COALESCE(
         (SELECT json_agg(t.tags) FROM tags t WHERE t.idea_id = i.id),
         '[]'::json
@@ -132,16 +148,37 @@ async function getUserSavedIdeas(user_id) {
   return result.rows;
 }
 
-async function toggleLike(idea_id) {
-  const query = `
-    UPDATE ideas
-    SET likes = likes + 1
-    WHERE id = $1
-    RETURNING id, likes
-  `;
+async function toggleLike(user_id, idea_id) {
+  // Check if already liked by this user
+  const checkQuery = `SELECT id FROM idea_likes WHERE user_id = $1 AND idea_id = $2`;
+  const checkResult = await db.query(checkQuery, [user_id, idea_id]);
 
-  const result = await db.query(query, [idea_id]);
-  return result.rows[0];
+  let isLiked = false;
+
+  if (checkResult.rows.length > 0) {
+    // Already liked -> Remove like (Unlike)
+    await db.query(`DELETE FROM idea_likes WHERE user_id = $1 AND idea_id = $2`, [user_id, idea_id]);
+    await db.query(`UPDATE ideas SET likes = GREATEST(0, likes - 1) WHERE id = $1`, [idea_id]);
+    isLiked = false;
+  } else {
+    // Not liked -> Add like
+    await db.query(`INSERT INTO idea_likes (user_id, idea_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [user_id, idea_id]);
+    await db.query(`UPDATE ideas SET likes = likes + 1 WHERE id = $1`, [idea_id]);
+    isLiked = true;
+  }
+
+  // Fetch updated total likes count
+  const countResult = await db.query(
+    `SELECT COALESCE((SELECT COUNT(*)::int FROM idea_likes WHERE idea_id = $1), (SELECT likes FROM ideas WHERE id = $1)) AS likes`,
+    [idea_id]
+  );
+  const likesCount = parseInt(countResult.rows[0]?.likes || 0, 10);
+
+  return {
+    id: idea_id,
+    likes: likesCount,
+    is_liked: isLiked,
+  };
 }
 
 async function getAllTagsAccordingToIdea(user_id) {

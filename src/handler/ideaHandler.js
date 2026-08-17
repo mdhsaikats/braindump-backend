@@ -43,7 +43,24 @@ async function createIdeaPost(req, res, next) {
 
 async function getAllIdeas(req, res, next) {
   try {
-    const ideas = await getAllIdea();
+    const userId = req.user?.userId || null;
+    const searchQuery = req.query.q || req.query.search || "";
+    const ideas = await getAllIdea(userId, searchQuery);
+
+    return res.status(200).json({
+      success: true,
+      ideas,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function searchIdeasHandler(req, res, next) {
+  try {
+    const userId = req.user?.userId || null;
+    const searchQuery = req.query.q || req.query.query || req.query.search || "";
+    const ideas = await getAllIdea(userId, searchQuery);
 
     return res.status(200).json({
       success: true,
@@ -139,8 +156,9 @@ async function getSavedIdeasHandler(req, res, next) {
 
 async function likeIdeaHandler(req, res, next) {
   try {
+    const userId = req.user.userId;
     const { id } = req.params;
-    const updated = await toggleLike(id);
+    const updated = await toggleLike(userId, id);
 
     return res.status(200).json({
       success: true,
@@ -154,6 +172,7 @@ async function likeIdeaHandler(req, res, next) {
 export { 
   createIdeaPost, 
   getAllIdeas, 
+  searchIdeasHandler,
   getMyIdeas, 
   deleteIdeaPost, 
   saveIdeaHandler, 

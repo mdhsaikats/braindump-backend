@@ -3,6 +3,7 @@ const router = express.Router();
 import { 
   createIdeaPost, 
   getAllIdeas,
+  searchIdeasHandler,
   getMyIdeas, 
   deleteIdeaPost, 
   saveIdeaHandler, 
@@ -12,6 +13,8 @@ import {
 } from "../handler/ideaHandler.js";
 
 router.get("/idea", getAllIdeas);
+router.get("/ideas/search", searchIdeasHandler);
+router.get("/idea/search", searchIdeasHandler);
 router.post("/idea", createIdeaPost);
 router.get("/my-ideas", getMyIdeas);
 router.delete("/idea/:id", deleteIdeaPost);
