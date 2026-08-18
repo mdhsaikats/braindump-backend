@@ -9,6 +9,7 @@ import {
   getUserSavedIdeas,
   toggleLike,
   getAllTagsAccordingToIdea,
+  ideasUpdatePerUser,
 } from "../models/ideaModel.js";
 
 async function createIdeaPost(req, res, next) {
@@ -16,7 +17,14 @@ async function createIdeaPost(req, res, next) {
     const { title, description, tags } = req.body;
     const userId = req.user.userId;
 
-    const tagsArray = Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : []);
+    const tagsArray = Array.isArray(tags)
+      ? tags
+      : typeof tags === "string"
+        ? tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [];
 
     const idea = await createIdea(userId, title, description);
     const ideaId = idea.id;
@@ -59,7 +67,8 @@ async function getAllIdeas(req, res, next) {
 async function searchIdeasHandler(req, res, next) {
   try {
     const userId = req.user?.userId || null;
-    const searchQuery = req.query.q || req.query.query || req.query.search || "";
+    const searchQuery =
+      req.query.q || req.query.query || req.query.search || "";
     const ideas = await getAllIdea(userId, searchQuery);
 
     return res.status(200).json({
@@ -169,14 +178,41 @@ async function likeIdeaHandler(req, res, next) {
   }
 }
 
-export { 
-  createIdeaPost, 
-  getAllIdeas, 
+async function updateUserIdeas(req, res, next) {
+  try {
+    const { title, description, idea_id } = req.body;
+    const userId = req.user.userId;
+    const updateIdea = await ideasUpdatePerUser(
+      userId,
+      idea_id,
+      title,
+      description,
+    );
+    if (!updateIdea) {
+      res.status(404).json({
+        success: false,
+        message: "You need to include either title or description to update",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "User idea updated successfully",
+      data: updateIdea,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export {
+  createIdeaPost,
+  getAllIdeas,
   searchIdeasHandler,
-  getMyIdeas, 
-  deleteIdeaPost, 
-  saveIdeaHandler, 
-  unsaveIdeaHandler, 
-  getSavedIdeasHandler, 
-  likeIdeaHandler 
+  getMyIdeas,
+  deleteIdeaPost,
+  saveIdeaHandler,
+  unsaveIdeaHandler,
+  getSavedIdeasHandler,
+  likeIdeaHandler,
+  updateUserIdeas,
 };

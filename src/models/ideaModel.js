@@ -157,20 +157,31 @@ async function toggleLike(user_id, idea_id) {
 
   if (checkResult.rows.length > 0) {
     // Already liked -> Remove like (Unlike)
-    await db.query(`DELETE FROM idea_likes WHERE user_id = $1 AND idea_id = $2`, [user_id, idea_id]);
-    await db.query(`UPDATE ideas SET likes = GREATEST(0, likes - 1) WHERE id = $1`, [idea_id]);
+    await db.query(
+      `DELETE FROM idea_likes WHERE user_id = $1 AND idea_id = $2`,
+      [user_id, idea_id],
+    );
+    await db.query(
+      `UPDATE ideas SET likes = GREATEST(0, likes - 1) WHERE id = $1`,
+      [idea_id],
+    );
     isLiked = false;
   } else {
     // Not liked -> Add like
-    await db.query(`INSERT INTO idea_likes (user_id, idea_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [user_id, idea_id]);
-    await db.query(`UPDATE ideas SET likes = likes + 1 WHERE id = $1`, [idea_id]);
+    await db.query(
+      `INSERT INTO idea_likes (user_id, idea_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [user_id, idea_id],
+    );
+    await db.query(`UPDATE ideas SET likes = likes + 1 WHERE id = $1`, [
+      idea_id,
+    ]);
     isLiked = true;
   }
 
   // Fetch updated total likes count
   const countResult = await db.query(
     `SELECT COALESCE((SELECT COUNT(*)::int FROM idea_likes WHERE idea_id = $1), (SELECT likes FROM ideas WHERE id = $1)) AS likes`,
-    [idea_id]
+    [idea_id],
   );
   const likesCount = parseInt(countResult.rows[0]?.likes || 0, 10);
 
@@ -195,15 +206,23 @@ async function getAllTagsAccordingToIdea(user_id) {
   return result.rows;
 }
 
-export { 
-  createIdea, 
-  addTags, 
-  getAllIdea, 
-  getUserIdeas, 
-  deleteIdea, 
-  saveIdea, 
-  unsaveIdea, 
-  getUserSavedIdeas, 
-  toggleLike, 
-  getAllTagsAccordingToIdea 
+async function ideasUpdatePerUser(user_id, idea_id, title, description) {
+  const query = `UPDATE ideas SET title = $1,description= $2 WHERE user_id = $3 AND id = $4`;
+  const values = [title, description, user_id, idea_id];
+  const result = await db.query(query, values);
+  return result.rows[0];
+}
+
+export {
+  createIdea,
+  addTags,
+  getAllIdea,
+  getUserIdeas,
+  deleteIdea,
+  saveIdea,
+  unsaveIdea,
+  getUserSavedIdeas,
+  toggleLike,
+  getAllTagsAccordingToIdea,
+  ideasUpdatePerUser,
 };
