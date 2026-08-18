@@ -182,6 +182,21 @@ async function updateUserIdeas(req, res, next) {
   try {
     const { title, description, idea_id } = req.body;
     const userId = req.user.userId;
+
+    if (!idea_id) {
+      return res.status(400).json({
+        success: false,
+        message: "idea_id is required",
+      });
+    }
+
+    if (title === undefined && description === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "You need to include either title or description to update",
+      });
+    }
+
     const updateIdea = await ideasUpdatePerUser(
       userId,
       idea_id,
@@ -189,12 +204,12 @@ async function updateUserIdeas(req, res, next) {
       description,
     );
     if (!updateIdea) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
-        message: "You need to include either title or description to update",
+        message: "Idea not found or you do not own it",
       });
     }
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "User idea updated successfully",
       data: updateIdea,

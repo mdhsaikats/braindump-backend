@@ -207,7 +207,14 @@ async function getAllTagsAccordingToIdea(user_id) {
 }
 
 async function ideasUpdatePerUser(user_id, idea_id, title, description) {
-  const query = `UPDATE ideas SET title = $1,description= $2 WHERE user_id = $3 AND id = $4`;
+  const query = `
+    UPDATE ideas
+    SET
+      title = COALESCE($1, title),
+      description = COALESCE($2, description)
+    WHERE user_id = $3 AND id = $4
+    RETURNING id, title, description, user_id, created_at
+  `;
   const values = [title, description, user_id, idea_id];
   const result = await db.query(query, values);
   return result.rows[0];
