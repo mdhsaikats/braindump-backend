@@ -4,11 +4,10 @@ import userRouter from "./src/routes/userRoutes.js";
 import ideaRoutes from "./src/routes/ideaRoutes.js";
 import morgan from "morgan";
 import authMiddleware from "./src/middleware/authMiddleware.js";
-import limiter from "./src/utils/rateLimiter.js";
+//import limiter from "./src/utils/rateLimiter.js";
 import helmet from "helmet";
 import cors from "cors";
 import { notFound, globalErrorHandler } from "./src/middleware/errorHandler.js";
-
 
 const app = express();
 app.set("trust proxy", 1);
@@ -20,7 +19,7 @@ app.use(
   }),
 );
 app.use(helmet());
-app.use(limiter);
+//app.use(limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
